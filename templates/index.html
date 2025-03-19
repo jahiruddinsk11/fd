@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO v11 Fruit Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: linear-gradient(-45deg, #ff758c, #ff7eb3, #fad0c4, #fbc2eb);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            padding: 20px;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 30px;
+            font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .upload-container {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            width: 350px;
+            margin: 0 auto;
+            box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            background: white;
+            color: #ff758c;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .file-label:hover {
+            background: #ff4f7b;
+            color: white;
+        }
+
+        button {
+            margin-top: 15px;
+            background: #ff4f7b;
+            border: none;
+            color: white;
+            font-size: 18px;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            background: #ff2a5a;
+            transform: scale(1.05);
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.2);
+        }
+
+        .image-container {
+            margin-top: 30px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        img {
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.6);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        img:hover {
+            transform: scale(1.02);
+        }
+
+        .loading {
+            display: none;
+            font-size: 20px;
+            margin-top: 25px;
+        }
+
+        .spinner {
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 15px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: black;">Hi! I am Jahir Uddin Sk</h1>
+
+        <h1>WelCome to My Fruits Detection Model With YOLOV11 </h1>
+    <h1>My Model Can Detect only 4 Different types of fruits </h1>
+         <h1 style="color: black;">Apples-Bananas-Oranges-pear </h1>
+
+    <div class="upload-container">
+        <label for="imageUpload" class="file-label">📷 Choose an Image</label>
+        <input type="file" id="imageUpload">
+        <button onclick="uploadImage()">🔍 Detect</button>
+    </div>
+
+    <div class="loading">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <div id="result"></div>
+
+    <div class="image-container">
+        <h3>Original Image</h3>
+        <img id="uploaded-image" src="" style="display: none;">
+    </div>
+
+    <div class="image-container">
+        <h3>Detected Image</h3>
+        <img id="detected-image" src="" style="display: none;">
+    </div>
+
+    <script>
+        function uploadImage() {
+            let imageFile = document.getElementById("imageUpload").files[0];
+            if (!imageFile) {
+                alert("Please select an image!");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("image", imageFile);
+
+            document.querySelector(".loading").style.display = "block";
+            document.querySelectorAll(".image-container").forEach(el => el.style.opacity = "0");
+
+            fetch("/detect", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.querySelector(".loading").style.display = "none";
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                let uploadedImage = document.getElementById("uploaded-image");
+                uploadedImage.src = URL.createObjectURL(imageFile);
+                uploadedImage.style.display = "block";
+
+                let detectedImage = document.getElementById("detected-image");
+                detectedImage.src = data.image_url;
+                detectedImage.style.display = "block";
+
+                document.querySelectorAll(".image-container").forEach(el => el.style.opacity = "1");
+                document.getElementById("result").innerHTML = "<h3>Processed Image</h3>";
+            })
+            .catch(error => {
+                document.querySelector(".loading").style.display = "none";
+                console.error("Error:", error);
+            });
+        }
+    </script>
+</body>
+</html>
